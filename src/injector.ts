@@ -6,8 +6,10 @@
 
 import type { PostMessagePayload, FetchStatsRequest, InjectorReadyMessage } from './types/messages'
 import type { PinData, PinEngagement, PinDetails, ReactionCounts, PinterestResourceResponse } from './types/pinterest'
-import { SOURCE_ID, CONTENT_SOURCE_ID } from './constants'
 
+// Constants inlined for MAIN world injection (cannot use imports in injected scripts)
+const SOURCE_ID = 'pinstats-injector'
+const CONTENT_SOURCE_ID = 'pinstats-content'
 const API_PATTERNS = ['/resource/', 'graphql', '/v3/', 'PinResource', 'UserHomefeed']
 
 // Track pins we've already tried to fetch (avoid duplicate requests)
