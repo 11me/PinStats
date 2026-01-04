@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Coverage
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Reference/example files (not part of extension)
+sv-example.js
+
+# Documentation/planning
+prd.md
+
+# Local Claude config
+.claude/
+
+# Stray files
+index.js
