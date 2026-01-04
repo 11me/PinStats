@@ -4,38 +4,53 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-brightgreen.svg)](https://chromewebstore.google.com)
 
-> **Unlock Hidden Pinterest Insights** - Reveal engagement metrics (saves, comments, shares, reactions) and download high-resolution media with one click.
+> **Unlock Hidden Pinterest Insights** — Reveal engagement metrics and download high-resolution media with one click.
 
-## 🚀 Features
+---
+
+## ⚡ Why PinStats?
+
+Pinterest hides crucial engagement data that creators, marketers, and researchers need to make informed decisions. You can see a pin's image, but not how many people saved it, commented on it, or shared it. **This information is buried in their API.**
+
+PinStats brings this hidden data to the surface — right on the pins you're browsing.
+
+---
+
+## 🤔 Who is this for?
+
+- **Content Creators** - Track what resonates with your audience
+- **Social Media Marketers** - Analyze competitor performance and trends
+- **Researchers** - Gather engagement data for studies
+- **Pinterest Power Users** - Make data-driven decisions about what to save
+
+---
+
+## ✨ Features
 
 ### 📊 Real-Time Analytics
-- **Hidden Engagement Metrics**: View saves (repins), comments, shares, and reactions directly on pins
-- **Non-Intrusive Overlays**: Beautiful glassmorphism UI that blends seamlessly with Pinterest
-- **Performance Optimized**: Intelligent caching with LRU eviction (5,000 pins, 24h TTL)
-- **Batch Processing**: Parallel API requests (20 concurrent) for instant metrics
+- **Hidden Metrics Revealed**: Saves (repins), comments, shares, reactions
+- **Non-Intrusive Overlays**: Glassmorphism UI blends with Pinterest
+- **Instant Data**: Smart caching with 24-hour refresh
 
 ### 📥 One-Click Downloads
-- **High-Resolution Media**: Download original quality images and videos
-- **Smart Detection**: Automatically finds the best quality source
-- **Supported Formats**: JPG, PNG, GIF, WebP, MP4
-- **Security First**: Pinterest CDN validation, no third-party tracking
+- **High-Resolution Media**: Original quality images and videos
+- **Auto-Detection**: Finds the best quality source
+- **All Formats**: JPG, PNG, GIF, WebP, MP4
 
 ### 🔒 Privacy & Security
 - **Local Processing**: All data stays in your browser
-- **No External APIs**: Direct Pinterest API interception
-- **Open Source**: Fully auditable codebase
+- **No Tracking**: Zero external APIs or analytics
+- **Open Source**: Fully auditable code
 - **Manifest V3**: Latest Chrome security standards
 
-## 📸 Screenshots
+---
 
-_Coming soon: Screenshots will be added after repository creation_
+## 📦 Install
 
-## 🛠️ Installation
-
-### From Chrome Web Store (Recommended)
+### From Chrome Web Store *(Coming Soon)*
 _Link will be added after publication_
 
-### Manual Installation (Developer Mode)
+### Manual Installation
 1. Download the [latest release](https://github.com/11me/PinStats/releases/latest)
 2. Unzip the archive
 3. Open Chrome → `chrome://extensions/`
@@ -47,146 +62,136 @@ _Link will be added after publication_
 git clone https://github.com/11me/PinStats.git
 cd PinStats
 npm install
-npm run build
-# Load the 'dist' folder in Chrome
+npm run build  # Load the 'dist' folder in Chrome
 ```
 
-## 💡 How It Works
+---
+
+## 🚀 Usage
+
+1. **Install the extension** (see above)
+2. **Browse Pinterest** as normal
+3. **Hover over any pin** to see engagement overlays
+4. **Click the download button** (⬇️) to save media
+
+### Extension Settings
+
+Click the PinStats icon in your toolbar to:
+- **Toggle extension on/off** (disable without uninstalling)
+- **Clear cache** (free up storage)
+- **Support development** (crypto donations)
+- **Rate & review** (help others discover PinStats)
+- **Report bugs** (submit issues on GitHub)
+
+---
+
+## ❓ FAQ
+
+**Q: Will Pinterest ban me for using this?**
+A: No. PinStats only reads data that Pinterest already sends to your browser. It doesn't scrape, bot, or violate Terms of Service.
+
+**Q: Is my data safe?**
+A: Yes. All processing happens locally in your browser. Nothing is sent to external servers.
+
+**Q: Will this break when Pinterest updates?**
+A: Pinterest occasionally changes their API. If PinStats stops working, check for updates or [report an issue](https://github.com/11me/PinStats/issues).
+
+**Q: Can I use this on Firefox?**
+A: Not yet. Firefox port is planned — see [Roadmap](#-roadmap).
+
+---
+
+## 🔧 How it works
 
 PinStats uses a 3-layer architecture to comply with Chrome's Content Security Policy:
 
 ```
 ┌─────────────────────────────────────┐
 │  Injector (MAIN world)              │
-│  • Patches fetch() & XMLHttpRequest │
-│  • Intercepts Pinterest API         │
+│  • Intercepts Pinterest API calls  │
 │  • Extracts engagement data         │
 └──────────────┬──────────────────────┘
                │ postMessage
 ┌──────────────▼──────────────────────┐
 │  Content Script (ISOLATED world)    │
-│  • DOM scanning & overlay rendering │
-│  • LRU cache with TTL               │
-│  • Download coordination            │
+│  • Renders glassmorphism overlays  │
+│  • Manages LRU cache (5K pins)     │
 └──────────────┬──────────────────────┘
                │ chrome.runtime
 ┌──────────────▼──────────────────────┐
 │  Background Service Worker          │
-│  • Download handler                 │
-│  • Chrome Downloads API             │
+│  • Handles secure downloads         │
 └─────────────────────────────────────┘
 ```
 
-**Technical Highlights:**
-- TypeScript with strict mode
-- Vitest for testing (24/24 passing)
-- Vite + @crxjs/vite-plugin for blazing fast builds
-- Pre-commit hooks (gitleaks, conventional commits)
+**Tech Stack**: TypeScript • Vite • Vitest • Manifest V3
+For technical details, see [CLAUDE.md](CLAUDE.md).
 
-## 🧪 Development
+---
+
+## 🛠️ Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Development mode (auto-reload)
-npm run dev
-
-# Run tests
-npm test
-
-# Run tests with coverage
-npm run test:ci
-
-# TDD mode
-npm run tdd
-
-# Production build
-npm run build
+npm install       # Install dependencies
+npm run dev       # Development mode (auto-reload)
+npm test          # Run tests
+npm run build     # Production build
 ```
 
-## 📈 Performance Optimizations
+**Requirements**: Node.js 18+, npm 9+
 
-- ✅ **4x faster fetching**: Batch size optimized (20 concurrent requests)
-- ✅ **80% fewer scans**: Debounced MutationObserver (500ms)
-- ✅ **Zero memory leaks**: LRU cache with automatic eviction
-- ✅ **Layout optimized**: Batched DOM reads, eliminated thrashing
+**Project Structure**:
+```
+src/
+├── injector.ts       # API interception (MAIN world)
+├── content.ts        # Overlay rendering (ISOLATED world)
+├── background.ts     # Download handler
+├── popup.ts          # Extension popup
+├── types/            # TypeScript definitions
+└── utils/            # Cache, constants
+```
 
-## 🔐 Security Features
-
-- ✅ Origin validation for postMessage
-- ✅ Download URL allowlist (Pinterest CDN only)
-- ✅ No debug code in production
-- ✅ Pre-commit security scanning (gitleaks)
-- ✅ Comprehensive error handling
+---
 
 ## 🛣️ Roadmap
 
 - [ ] Chrome Web Store publication
 - [ ] Firefox extension port
-- [ ] Advanced analytics dashboard
 - [ ] Export data to CSV/JSON
+- [ ] Advanced analytics dashboard
 - [ ] Custom overlay themes
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit using conventional commits (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit using conventional commits (`feat:`, `fix:`, `docs:`, etc.)
+4. Push and open a Pull Request
 
-## 📝 Development Workflow
+---
 
-This project uses [beads](https://github.com/beadsd/beads) for task tracking:
+## ❤️ Support
 
-```bash
-bd ready          # Show available tasks
-bd create "..."   # Create new task
-bd update <id>    # Update task status
-bd close <id>     # Close completed task
-```
+If PinStats saves you time, consider supporting development:
 
-## 🧰 Tech Stack
+| Currency | Address |
+|----------|---------|
+| Bitcoin (BTC) | `bc1qjs07p0qpa2taaje0044yhjry48qps4dseny4kd` |
+| Ethereum (ETH) | `0x044ffd952D8525bC69E4d5e32267E9a6bac36510` |
+| Solana (SOL) | `9nP1soTcZspCi2K1WWE9N7PkKPMA3eFgsdZ61vrCCKGZ` |
 
-- **Runtime**: Chrome Extension (Manifest V3)
-- **Language**: TypeScript (ES2022, strict mode)
-- **Build Tool**: Vite + @crxjs/vite-plugin
-- **Testing**: Vitest + jsdom
-- **Storage**: chrome.storage.local
-- **Bundler**: Vite with tree-shaking
+**Issues**: [GitHub Issues](https://github.com/11me/PinStats/issues)
 
-## 📊 Project Stats
-
-- **14 commits** from initial to production-ready
-- **12 tasks** completed (Phase 1-4)
-- **24 tests** with 100% pass rate
-- **25+ issues** resolved
-- **0 security vulnerabilities**
-
-## 🐛 Known Issues
-
-All critical and high-priority issues have been resolved! See [CLAUDE.md](CLAUDE.md) for the complete resolution history.
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- Inspired by the need for transparent Pinterest analytics
-- Built with modern Chrome Extension APIs
-- Community-driven development
-
-## 📧 Contact
-
-- **Issues**: [GitHub Issues](https://github.com/11me/PinStats/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/11me/PinStats/discussions)
-
 ---
-
-**Keywords**: pinterest analytics, pinterest stats, pinterest engagement, pinterest downloader, chrome extension, pinterest metrics, pinterest insights, social media analytics, pinterest tool, engagement tracking
 
 ⭐ **Star this repo if you find it useful!**

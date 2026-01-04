@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PinStats Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1 class="title">PinStats</h1>
+        <span class="version">v1.0.0</span>
+      </div>
+    </header>
+
+    <!-- Main Toggle -->
+    <div class="toggle-section">
+      <label class="toggle-label">
+        <span class="toggle-text">PinStats Active</span>
+        <div class="toggle-wrapper">
+          <input type="checkbox" id="extensionToggle" class="toggle-input">
+          <span class="toggle-slider"></span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button id="clearCacheBtn" class="btn btn-secondary">
+        <span class="btn-icon">🗑️</span>
+        <span>Clear Cache</span>
+      </button>
+
+      <button id="supportBtn" class="btn btn-primary">
+        <span class="btn-icon">🤍</span>
+        <span>Support</span>
+      </button>
+
+      <button id="rateBtn" class="btn btn-primary">
+        <span class="btn-icon">⭐</span>
+        <span>Rate Us</span>
+      </button>
+
+      <button id="reportBtn" class="btn btn-secondary">
+        <span class="btn-icon">🐛</span>
+        <span>Report Bug</span>
+      </button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status hidden"></div>
+  </div>
+
+  <script src="popup.ts" type="module"></script>
+</body>
+</html>

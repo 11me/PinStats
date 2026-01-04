@@ -35,6 +35,11 @@ let refreshIntervalId: number | null = null
 let syncIntervalId: number | null = null
 let mutationObserver: MutationObserver | null = null
 
+// Extension enable/disable state
+const STORAGE_KEY_ENABLED = 'extensionEnabled'
+let extensionEnabled = true
+let isInitialized = false
+
 /**
  * Inject the injector script into MAIN world
  */
@@ -490,42 +495,61 @@ function refreshOverlays(): void {
 }
 
 /**
+ * Check if extension is enabled
+ */
+async function checkEnabled(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.sync.get(STORAGE_KEY_ENABLED)
+    return result[STORAGE_KEY_ENABLED] !== false // Default to true
+  } catch (error) {
+    console.error('[PinStats] Failed to check enabled state:', error)
+    return true // Fail-open
+  }
+}
+
+/**
+ * Cleanup resources
+ * Called on disable or page unload
+ */
+function cleanup(): void {
+  console.log('[PinStats] Cleaning up...')
+
+  // Stop mutation observer
+  if (mutationObserver) {
+    mutationObserver.disconnect()
+    mutationObserver = null
+  }
+
+  // Clear intervals
+  if (scanIntervalId !== null) {
+    window.clearInterval(scanIntervalId)
+    scanIntervalId = null
+  }
+  if (refreshIntervalId !== null) {
+    window.clearInterval(refreshIntervalId)
+    refreshIntervalId = null
+  }
+  if (syncIntervalId !== null) {
+    window.clearInterval(syncIntervalId)
+    syncIntervalId = null
+  }
+
+  // Clear fetch timer
+  if (fetchTimer) {
+    clearTimeout(fetchTimer)
+    fetchTimer = null
+  }
+
+  // Final sync to storage
+  cache.syncNow()
+}
+
+/**
  * Cleanup resources on page unload
  * Prevents memory leaks and ensures data is saved
  */
 function setupCleanup(): void {
-  window.addEventListener('beforeunload', () => {
-    console.log('[PinStats] Cleaning up...')
-
-    // Stop mutation observer
-    if (mutationObserver) {
-      mutationObserver.disconnect()
-      mutationObserver = null
-    }
-
-    // Clear intervals
-    if (scanIntervalId !== null) {
-      window.clearInterval(scanIntervalId)
-      scanIntervalId = null
-    }
-    if (refreshIntervalId !== null) {
-      window.clearInterval(refreshIntervalId)
-      refreshIntervalId = null
-    }
-    if (syncIntervalId !== null) {
-      window.clearInterval(syncIntervalId)
-      syncIntervalId = null
-    }
-
-    // Clear fetch timer
-    if (fetchTimer) {
-      clearTimeout(fetchTimer)
-      fetchTimer = null
-    }
-
-    // Final sync to storage
-    cache.syncNow()
-  })
+  window.addEventListener('beforeunload', cleanup)
 }
 
 /**
@@ -533,6 +557,13 @@ function setupCleanup(): void {
  */
 async function init(): Promise<void> {
   try {
+    // Check if extension is enabled
+    extensionEnabled = await checkEnabled()
+    if (!extensionEnabled) {
+      console.log('[PinStats] Extension is disabled, skipping initialization')
+      return
+    }
+
     console.log('[PinStats] Content script initializing...')
 
     // 1. CRITICAL: Set up message listener FIRST before anything else
@@ -570,6 +601,7 @@ async function init(): Promise<void> {
     // 8. Set up cleanup on page unload
     setupCleanup()
 
+    isInitialized = true
     console.log('[PinStats] Content script initialized')
   } catch (error) {
     console.error('[PinStats] Initialization failed:', error)
@@ -605,6 +637,27 @@ async function init(): Promise<void> {
     }
   }
 }
+
+// Listen for state changes from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'state-change') {
+    extensionEnabled = message.enabled
+    console.log(`[PinStats] Extension ${message.enabled ? 'enabled' : 'disabled'}`)
+
+    if (!message.enabled && isInitialized) {
+      // Disable: cleanup and remove overlays
+      cleanup()
+      document.querySelectorAll('.pinstats-overlay').forEach(el => el.remove())
+      isInitialized = false
+    } else if (message.enabled && !isInitialized) {
+      // Enable: re-initialize
+      init()
+    }
+
+    sendResponse({ success: true })
+    return true
+  }
+})
 
 // Run
 init()

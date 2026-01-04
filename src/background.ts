@@ -5,6 +5,21 @@
 
 import type { DownloadRequest, DownloadResponse } from './types/messages'
 
+// Extension enable/disable state
+const STORAGE_KEY_ENABLED = 'extensionEnabled'
+
+/**
+ * Check if extension is enabled
+ */
+async function isExtensionEnabled(): Promise<boolean> {
+  try {
+    const result = await chrome.storage.sync.get(STORAGE_KEY_ENABLED)
+    return result[STORAGE_KEY_ENABLED] !== false // Default to true
+  } catch {
+    return true // Fail-open
+  }
+}
+
 /**
  * Validate that URL is from Pinterest CDN
  * Prevents downloading from malicious sources
@@ -46,10 +61,20 @@ function getFileExtension(url: string): string {
 /**
  * Handle download request from content script
  */
-function handleDownloadRequest(
+async function handleDownloadRequest(
   request: DownloadRequest,
   sendResponse: (response: DownloadResponse) => void
-): void {
+): Promise<void> {
+  // Check if extension is enabled
+  const enabled = await isExtensionEnabled()
+  if (!enabled) {
+    sendResponse({
+      success: false,
+      error: 'Extension is disabled',
+    })
+    return
+  }
+
   const { pinID, imageUrl } = request
 
   // Validate URL is from Pinterest CDN
