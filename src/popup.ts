@@ -57,7 +57,7 @@ async function saveState(enabled: boolean): Promise<void> {
 /**
  * Notify all tabs about state change
  */
-async function notifyTabsStateChange(enabled: boolean): Promise<void> {
+async function notifyTabsStateChange(enabled: boolean, previousState: boolean): Promise<void> {
   try {
     const tabs = await chrome.tabs.query({})
     const promises = tabs.map(tab => {
@@ -71,6 +71,24 @@ async function notifyTabsStateChange(enabled: boolean): Promise<void> {
       }
     })
     await Promise.all(promises)
+
+    // If transitioning from disabled to enabled, reload Pinterest tabs
+    if (previousState === false && enabled === true) {
+      const pinterestTabs = await chrome.tabs.query({
+        url: ['https://www.pinterest.com/*', 'https://pinterest.com/*']
+      })
+
+      const reloadPromises = pinterestTabs.map(tab => {
+        if (tab.id) {
+          return chrome.tabs.sendMessage(tab.id, {
+            type: 'reload-page',
+          }).catch(() => {
+            // Ignore errors for tabs that don't have the content script
+          })
+        }
+      })
+      await Promise.all(reloadPromises)
+    }
   } catch (error) {
     console.error('[PinStats] Failed to notify tabs:', error)
   }
@@ -83,8 +101,10 @@ async function handleToggleChange(): Promise<void> {
   const enabled = toggle.checked
 
   try {
+    // Load previous state before saving new state
+    const previousState = await loadState()
     await saveState(enabled)
-    await notifyTabsStateChange(enabled)
+    await notifyTabsStateChange(enabled, previousState)
     showStatus(
       enabled ? 'Extension enabled' : 'Extension disabled',
       'success'

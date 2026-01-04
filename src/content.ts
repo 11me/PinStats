@@ -23,7 +23,7 @@ const pendingRequests = new Set<string>()
 let fetchQueue: string[] = []
 let fetchTimer: ReturnType<typeof setTimeout> | null = null
 const FETCH_DELAY_MS = 300
-const MAX_BATCH_SIZE = 20 // Match injector's CONCURRENT_LIMIT for optimal parallel fetching
+const MAX_BATCH_SIZE = 10 // Match injector's CONCURRENT_LIMIT for optimal parallel fetching
 
 // Injector ready state
 let injectorReady = false
@@ -655,6 +655,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     sendResponse({ success: true })
+    return true
+  }
+
+  if (message.type === 'reload-page') {
+    console.log('[PinStats] Reloading page after extension enabled')
+    window.location.reload()
     return true
   }
 })

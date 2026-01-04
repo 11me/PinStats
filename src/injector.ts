@@ -6,6 +6,7 @@
 
 import type { PostMessagePayload, FetchStatsRequest, InjectorReadyMessage } from './types/messages'
 import type { PinData, PinEngagement, PinDetails, ReactionCounts, PinterestResourceResponse } from './types/pinterest'
+import { retryWithBackoff } from './utils/retry'
 
 // Constants inlined for MAIN world injection (cannot use imports in injected scripts)
 const SOURCE_ID = 'pinstats-injector'
@@ -19,9 +20,8 @@ const MAX_FETCHED_PINS = 5000
 const FETCHED_PIN_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
 // Parallel fetch settings
-const CONCURRENT_LIMIT = 20
+const CONCURRENT_LIMIT = 10
 const BATCH_DELAY_MS = 100
-const RATE_LIMIT_BACKOFF_MS = 1000
 
 // Store originals
 const originalFetch = window.fetch
@@ -343,10 +343,10 @@ function patchXHR(): void {
 /**
  * Fetch pin stats directly from Pinterest API
  * Used when stats not available from intercepted responses
- * Returns true if rate limited (429), false otherwise
+ * Uses retry logic with exponential backoff for network failures, 5xx errors, and rate limiting
  */
-async function fetchPinStats(pinID: string): Promise<boolean> {
-  if (fetchedPins.has(pinID)) return false
+async function fetchPinStats(pinID: string): Promise<void> {
+  if (fetchedPins.has(pinID)) return
   fetchedPins.set(pinID, Date.now())
 
   try {
@@ -371,26 +371,24 @@ async function fetchPinStats(pinID: string): Promise<boolean> {
 
     console.log(`[PinStats] Fetching pin ${pinID}...`)
 
-    const response = await originalFetch(url, {
-      method: 'GET',
-      credentials: 'include', // Include cookies for authentication
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Pinterest-PWS-Handler': 'www/homefeed.js',
-        'X-Requested-With': 'XMLHttpRequest', // Pinterest expects this header
-      },
-    })
-
-    if (response.status === 429) {
-      console.log(`[PinStats] Rate limited for pin ${pinID}`)
-      fetchedPins.delete(pinID)
-      return true  // Signal rate limit hit
-    }
+    // Wrap fetch in retry logic with exponential backoff
+    const response = await retryWithBackoff(
+      () => originalFetch(url, {
+        method: 'GET',
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Pinterest-PWS-Handler': 'www/homefeed.js',
+          'X-Requested-With': 'XMLHttpRequest', // Pinterest expects this header
+        },
+      }),
+      { timeout: 10000 } // 10s timeout
+    )
 
     if (!response.ok) {
       console.log(`[PinStats] Failed to fetch pin ${pinID}: ${response.status}`)
-      return false
+      return
     }
 
     const data = (await response.json()) as PinterestResourceResponse
@@ -416,17 +414,15 @@ async function fetchPinStats(pinID: string): Promise<boolean> {
     } else {
       console.log(`[PinStats] No data in response for pin ${pinID}`)
     }
-    return false
   } catch (error) {
-    console.log(`[PinStats] Error fetching pin ${pinID}:`, error)
+    console.log(`[PinStats] Error fetching pin ${pinID} after retries:`, error)
     fetchedPins.delete(pinID)
-    return false
   }
 }
 
 /**
  * Fetch multiple pins in parallel with controlled concurrency
- * Uses Promise.all with batching to speed up fetching while avoiding rate limits
+ * Retry logic with exponential backoff is handled per-pin in fetchPinStats()
  */
 async function fetchBatchParallel(pinIDs: string[]): Promise<void> {
   console.log(`[PinStats] Fetching ${pinIDs.length} pins in parallel (limit: ${CONCURRENT_LIMIT})`)
@@ -436,16 +432,11 @@ async function fetchBatchParallel(pinIDs: string[]): Promise<void> {
     console.log(`[PinStats] Batch ${Math.floor(i / CONCURRENT_LIMIT) + 1}: fetching ${batch.length} pins in parallel`)
 
     // Fetch all pins in this batch simultaneously
-    const results = await Promise.all(batch.map((id) => fetchPinStats(id)))
+    // Each pin has its own retry logic with exponential backoff
+    await Promise.all(batch.map((id) => fetchPinStats(id)))
 
-    // Check if any request was rate limited
-    const wasRateLimited = results.some((rateLimited) => rateLimited)
-
-    if (wasRateLimited) {
-      console.log(`[PinStats] Rate limit detected, backing off ${RATE_LIMIT_BACKOFF_MS}ms`)
-      await new Promise((r) => setTimeout(r, RATE_LIMIT_BACKOFF_MS))
-    } else if (i + CONCURRENT_LIMIT < pinIDs.length) {
-      // Small delay between batches to be nice to the API
+    // Small delay between batches to be nice to the API
+    if (i + CONCURRENT_LIMIT < pinIDs.length) {
       await new Promise((r) => setTimeout(r, BATCH_DELAY_MS))
     }
   }

@@ -44,6 +44,14 @@ export interface FetchStatsRequest {
 }
 
 /**
+ * Message sent from popup.ts to content.ts via chrome.tabs.sendMessage
+ * Requests the content script to reload the page
+ */
+export interface ReloadPageMessage {
+  type: 'reload-page'
+}
+
+/**
  * Message sent from content.ts to background.ts via chrome.runtime.sendMessage
  */
 export interface DownloadRequest {
