@@ -440,9 +440,12 @@ function scanForPins(): void {
 }
 
 /**
- * Set up MutationObserver
+ * Set up MutationObserver with debouncing
  */
 function setupObserver(): void {
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  const MUTATION_DEBOUNCE_MS = 500 // Increased from 100ms for Pinterest's dynamic DOM
+
   mutationObserver = new MutationObserver((mutations) => {
     let hasNewNodes = false
 
@@ -454,8 +457,11 @@ function setupObserver(): void {
 
     // Only scan if new nodes were added
     if (hasNewNodes) {
-      // Small delay to let Pinterest finish rendering
-      setTimeout(scanForPins, 100)
+      // Debounce: clear previous timer and start new one
+      if (debounceTimer) {
+        clearTimeout(debounceTimer)
+      }
+      debounceTimer = setTimeout(scanForPins, MUTATION_DEBOUNCE_MS)
     }
   })
 
