@@ -529,44 +529,78 @@ function setupCleanup(): void {
  * Initialize
  */
 async function init(): Promise<void> {
-  console.log('[PinStats] Content script initializing...')
+  try {
+    console.log('[PinStats] Content script initializing...')
 
-  // 1. CRITICAL: Set up message listener FIRST before anything else
-  // This ensures we don't miss any messages from the injector
-  setupMessageListener()
+    // 1. CRITICAL: Set up message listener FIRST before anything else
+    // This ensures we don't miss any messages from the injector
+    setupMessageListener()
 
-  // 2. Initialize cache from storage
-  await cache.initFromStorage()
+    // 2. Initialize cache from storage
+    await cache.initFromStorage()
 
-  // 3. Start storage sync
-  syncIntervalId = cache.startStorageSync()
+    // 3. Start storage sync
+    syncIntervalId = cache.startStorageSync()
 
-  // 4. Inject the interceptor (messages will be caught)
-  injectScript()
+    // 4. Inject the interceptor (messages will be caught)
+    injectScript()
 
-  // 5. Wait for DOM ready, then start
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+    // 5. Wait for DOM ready, then start
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setupObserver()
+        // Delay initial scan to let Pinterest render
+        setTimeout(scanForPins, 1000)
+      })
+    } else {
       setupObserver()
-      // Delay initial scan to let Pinterest render
-      setTimeout(scanForPins, 1000)
-    })
-  } else {
-    setupObserver()
-    // Delay initial scan
-    setTimeout(scanForPins, 500)
+      // Delay initial scan
+      setTimeout(scanForPins, 500)
+    }
+
+    // 6. Periodic scan (Pinterest uses infinite scroll)
+    scanIntervalId = window.setInterval(scanForPins, 3000)
+
+    // 7. Periodic refresh of overlay values
+    refreshIntervalId = window.setInterval(refreshOverlays, 2000)
+
+    // 8. Set up cleanup on page unload
+    setupCleanup()
+
+    console.log('[PinStats] Content script initialized')
+  } catch (error) {
+    console.error('[PinStats] Initialization failed:', error)
+
+    // Show user-visible error notification
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`[PinStats] FATAL: Extension initialization failed - ${errorMessage}`)
+
+    // Attempt to show a visible error on the page
+    try {
+      const errorDiv = document.createElement('div')
+      errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #ff4444;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `
+      errorDiv.textContent = `PinStats extension failed to initialize. Check console for details.`
+      document.body?.appendChild(errorDiv)
+
+      // Auto-remove after 10 seconds
+      setTimeout(() => errorDiv.remove(), 10000)
+    } catch {
+      // If we can't even show an error, just log it
+      console.error('[PinStats] Could not display error notification')
+    }
   }
-
-  // 6. Periodic scan (Pinterest uses infinite scroll)
-  scanIntervalId = window.setInterval(scanForPins, 3000)
-
-  // 7. Periodic refresh of overlay values
-  refreshIntervalId = window.setInterval(refreshOverlays, 2000)
-
-  // 8. Set up cleanup on page unload
-  setupCleanup()
-
-  console.log('[PinStats] Content script initialized')
 }
 
 // Run
