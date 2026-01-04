@@ -23,7 +23,7 @@ const pendingRequests = new Set<string>()
 let fetchQueue: string[] = []
 let fetchTimer: ReturnType<typeof setTimeout> | null = null
 const FETCH_DELAY_MS = 300
-const MAX_BATCH_SIZE = 5
+const MAX_BATCH_SIZE = 20 // Match injector's CONCURRENT_LIMIT for optimal parallel fetching
 
 // Injector ready state
 let injectorReady = false
