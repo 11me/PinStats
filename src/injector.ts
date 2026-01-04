@@ -14,9 +14,10 @@ const API_PATTERNS = ['/resource/', 'graphql', '/v3/', 'PinResource', 'UserHomef
 // Track pins we've already tried to fetch (avoid duplicate requests)
 const fetchedPins = new Set<string>()
 
-// Rate limiting state
-let lastFetchTime = 0
-const MIN_FETCH_INTERVAL_MS = 300
+// Parallel fetch settings
+const CONCURRENT_LIMIT = 20
+const BATCH_DELAY_MS = 100
+const RATE_LIMIT_BACKOFF_MS = 1000
 
 // Store originals
 const originalFetch = window.fetch
@@ -306,18 +307,11 @@ function patchXHR(): void {
 /**
  * Fetch pin stats directly from Pinterest API
  * Used when stats not available from intercepted responses
+ * Returns true if rate limited (429), false otherwise
  */
-async function fetchPinStats(pinID: string): Promise<void> {
-  if (fetchedPins.has(pinID)) return
+async function fetchPinStats(pinID: string): Promise<boolean> {
+  if (fetchedPins.has(pinID)) return false
   fetchedPins.add(pinID)
-
-  // Rate limiting
-  const now = Date.now()
-  const timeSinceLast = now - lastFetchTime
-  if (timeSinceLast < MIN_FETCH_INTERVAL_MS) {
-    await new Promise((r) => setTimeout(r, MIN_FETCH_INTERVAL_MS - timeSinceLast))
-  }
-  lastFetchTime = Date.now()
 
   try {
     const baseUrl = `${document.location.protocol}//${document.location.hostname}/resource/PinResource/get/`
@@ -353,14 +347,14 @@ async function fetchPinStats(pinID: string): Promise<void> {
     })
 
     if (response.status === 429) {
-      console.log(`[PinStats] Rate limited for pin ${pinID}, will retry later`)
+      console.log(`[PinStats] Rate limited for pin ${pinID}`)
       fetchedPins.delete(pinID)
-      return
+      return true  // Signal rate limit hit
     }
 
     if (!response.ok) {
       console.log(`[PinStats] Failed to fetch pin ${pinID}: ${response.status}`)
-      return
+      return false
     }
 
     const data = (await response.json()) as PinterestResourceResponse
@@ -386,10 +380,41 @@ async function fetchPinStats(pinID: string): Promise<void> {
     } else {
       console.log(`[PinStats] No data in response for pin ${pinID}`)
     }
+    return false
   } catch (error) {
     console.log(`[PinStats] Error fetching pin ${pinID}:`, error)
     fetchedPins.delete(pinID)
+    return false
   }
+}
+
+/**
+ * Fetch multiple pins in parallel with controlled concurrency
+ * Uses Promise.all with batching to speed up fetching while avoiding rate limits
+ */
+async function fetchBatchParallel(pinIDs: string[]): Promise<void> {
+  console.log(`[PinStats] Fetching ${pinIDs.length} pins in parallel (limit: ${CONCURRENT_LIMIT})`)
+
+  for (let i = 0; i < pinIDs.length; i += CONCURRENT_LIMIT) {
+    const batch = pinIDs.slice(i, i + CONCURRENT_LIMIT)
+    console.log(`[PinStats] Batch ${Math.floor(i / CONCURRENT_LIMIT) + 1}: fetching ${batch.length} pins in parallel`)
+
+    // Fetch all pins in this batch simultaneously
+    const results = await Promise.all(batch.map((id) => fetchPinStats(id)))
+
+    // Check if any request was rate limited
+    const wasRateLimited = results.some((rateLimited) => rateLimited)
+
+    if (wasRateLimited) {
+      console.log(`[PinStats] Rate limit detected, backing off ${RATE_LIMIT_BACKOFF_MS}ms`)
+      await new Promise((r) => setTimeout(r, RATE_LIMIT_BACKOFF_MS))
+    } else if (i + CONCURRENT_LIMIT < pinIDs.length) {
+      // Small delay between batches to be nice to the API
+      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS))
+    }
+  }
+
+  console.log(`[PinStats] Finished fetching ${pinIDs.length} pins`)
 }
 
 /**
@@ -408,9 +433,8 @@ function setupMessageListener(): void {
 
     if (message.type === 'fetch-stats' && message.data?.pinIDs) {
       console.log(`[PinStats] Injector will fetch ${message.data.pinIDs.length} pins:`, message.data.pinIDs)
-      message.data.pinIDs.forEach((pinID, index) => {
-        setTimeout(() => fetchPinStats(pinID), index * MIN_FETCH_INTERVAL_MS)
-      })
+      // Use parallel fetching with controlled concurrency
+      fetchBatchParallel(message.data.pinIDs)
     }
   })
 

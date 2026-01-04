@@ -65,6 +65,10 @@ function updateOverlay(pinID: string): void {
   if (!data) return
 
   overlays.forEach((overlay) => {
+    // Remove loading state
+    overlay.classList.remove('pinstats-loading')
+    overlay.querySelectorAll('.pinstats-loader').forEach((loader) => loader.remove())
+
     const savesEl = overlay.querySelector('.stat-saves .stat-value')
     if (savesEl) savesEl.textContent = formatNumber(data.engagement.repins)
 
@@ -226,41 +230,29 @@ function extractPinID(element: Element): string | null {
 }
 
 /**
- * Create overlay element
+ * Create overlay element - Glassmorphism design with horizontal layout
+ * Styles are in src/styles.css
  */
-function createOverlay(pinID: string, data: PinData | undefined): HTMLElement {
+function createOverlay(pinID: string, data: PinData | undefined, isLoading: boolean): HTMLElement {
   const overlay = document.createElement('div')
   overlay.className = 'pinstats-overlay'
+  if (isLoading) {
+    overlay.classList.add('pinstats-loading')
+  }
   overlay.dataset.pinId = pinID
-
-  overlay.style.cssText = `
-    position: absolute !important;
-    top: 8px !important;
-    left: 8px !important;
-    padding: 6px 8px !important;
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-radius: 8px !important;
-    z-index: 999999 !important;
-    pointer-events: auto !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    font-size: 11px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
-    line-height: 1.3 !important;
-  `
 
   const e = data?.engagement
   const d = data?.details
 
-  // Create stats container
+  // Create stats container (horizontal layout via CSS)
   const stats = document.createElement('div')
   stats.className = 'pinstats-stats'
-  stats.style.cssText = 'display: flex !important; flex-direction: column !important; gap: 1px !important;'
 
   const statItems = [
     { class: 'stat-saves', icon: '📌', value: e?.repins ?? 0, title: 'Saves' },
     { class: 'stat-comments', icon: '💬', value: e?.comments ?? 0, title: 'Comments' },
     { class: 'stat-shares', icon: '🔗', value: e?.shares ?? 0, title: 'Shares' },
-    { class: 'stat-reactions', icon: '👍', value: e?.reactions ?? 0, title: 'Reactions' },
+    { class: 'stat-reactions', icon: '❤️', value: e?.reactions ?? 0, title: 'Reactions' },
     { class: 'stat-age', icon: '📅', value: d?.createdAgo || '—', title: 'Age' },
   ]
 
@@ -268,43 +260,41 @@ function createOverlay(pinID: string, data: PinData | undefined): HTMLElement {
     const item = document.createElement('div')
     item.className = `stat-item ${className}`
     item.title = title
-    item.style.cssText = 'display: flex !important; align-items: center !important; gap: 4px !important;'
 
     const iconSpan = document.createElement('span')
+    iconSpan.className = 'stat-icon'
     iconSpan.textContent = icon
-    iconSpan.style.fontSize = '10px'
 
     const valueSpan = document.createElement('span')
     valueSpan.className = 'stat-value'
     valueSpan.textContent = typeof value === 'number' ? formatNumber(value) : value
-    valueSpan.style.cssText = 'font-weight: 600 !important; color: #111 !important;'
 
     item.appendChild(iconSpan)
     item.appendChild(valueSpan)
+
+    // Add loader element when loading
+    if (isLoading) {
+      const loader = document.createElement('span')
+      loader.className = 'pinstats-loader'
+      item.appendChild(loader)
+    }
+
     stats.appendChild(item)
   })
 
-  // Download button
+  // Download button (inline with stats)
   const downloadBtn = document.createElement('button')
   downloadBtn.className = 'pinstats-download'
   downloadBtn.title = 'Download'
   downloadBtn.textContent = '⬇️'
-  downloadBtn.style.cssText = `
-    background: none !important;
-    border: none !important;
-    cursor: pointer !important;
-    padding: 2px !important;
-    font-size: 12px !important;
-    margin-top: 2px !important;
-  `
-  downloadBtn.addEventListener('click', (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+  downloadBtn.addEventListener('click', (ev) => {
+    ev.preventDefault()
+    ev.stopPropagation()
     handleDownload(pinID)
   })
 
+  stats.appendChild(downloadBtn)
   overlay.appendChild(stats)
-  overlay.appendChild(downloadBtn)
 
   return overlay
 }
@@ -398,8 +388,11 @@ function processPinContainer(container: HTMLElement, pinID: string): void {
   const cachedData = cache.get(pinID)
   const valid = hasValidStats(cachedData)
 
+  // Determine loading state - loading if no valid cached stats
+  const isLoading = !cachedData || !valid
+
   // Create and add overlay
-  const overlay = createOverlay(pinID, cachedData)
+  const overlay = createOverlay(pinID, cachedData, isLoading)
   container.appendChild(overlay)
 
   console.log(
