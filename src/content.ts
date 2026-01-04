@@ -103,8 +103,10 @@ function setupMessageListener(): void {
       console.log('%c[PinStats] RAW MESSAGE RECEIVED:', 'color: purple; font-weight: bold;', JSON.stringify(data).substring(0, 200))
     }
 
+    // Security: Only accept messages from same window
+    // For same-window postMessage (MAIN ↔ ISOLATED contexts), event.source === window is sufficient
+    // Origin validation is only needed for cross-window postMessage (iframes, popups)
     if (event.source !== window) return
-    if (event.origin !== window.origin) return
 
     const message = event.data as InjectorMessage
     if (message?.source !== SOURCE_ID) return

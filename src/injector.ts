@@ -456,8 +456,10 @@ function setupMessageListener(): void {
   console.log('[PinStats] Injector setting up message listener...')
 
   window.addEventListener('message', (event) => {
+    // Security: Only accept messages from same window
+    // For same-window postMessage (MAIN ↔ ISOLATED contexts), event.source === window is sufficient
+    // Origin validation is only needed for cross-window postMessage (iframes, popups)
     if (event.source !== window) return
-    if (event.origin !== window.origin) return
 
     const message = event.data as FetchStatsRequest
     if (message?.source !== CONTENT_SOURCE_ID) return
