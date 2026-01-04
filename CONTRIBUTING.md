@@ -78,6 +78,47 @@ bd update <id>        # Update task status
 bd close <id>         # Close task
 ```
 
+## 🚀 Release Process (Maintainers Only)
+
+This section is for project maintainers who publish new versions.
+
+### Publishing a New Version
+
+1. **Update version** in `manifest.json`:
+   ```json
+   "version": "1.2.0"
+   ```
+
+2. **Commit** the version bump:
+   ```bash
+   git commit -m "chore: bump version to 1.2.0"
+   ```
+
+3. **Create git tag** (must match manifest version):
+   ```bash
+   git tag v1.2.0
+   ```
+
+4. **Push** commits and tags:
+   ```bash
+   git push && git push --tags
+   ```
+
+5. **Automated CI** will:
+   - Validate tag matches manifest version
+   - Run full test suite
+   - Build production extension
+   - Create GitHub release with ZIP
+   - Publish to Chrome Web Store (if secrets configured)
+
+### Important Notes
+
+- **Version format**: Use semantic versioning (MAJOR.MINOR.PATCH)
+- **Tag format**: Must be `vX.Y.Z` (e.g., `v1.2.0`)
+- **Version sync**: Git tag must match `manifest.json` version exactly
+- **First release**: Requires manual Chrome Web Store submission to obtain Extension ID
+- **Prerequisites**: CWS publishing requires Service Account setup and GitHub Secrets (see CLAUDE.md)
+
 ## 📋 Pull Request Process
 
 1. **Update documentation** if you change functionality

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "PinStats: Analytics & Downloader",
+  "name": "PinStats: Hidden Pinterest Metrics & Downloader",
   "version": "1.0.0",
   "description": "Reveals hidden engagement metrics and enables one-click downloading from Pinterest",
   "permissions": ["scripting", "activeTab", "downloads", "storage"],

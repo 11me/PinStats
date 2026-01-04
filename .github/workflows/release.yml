@@ -22,6 +22,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Validate version match
+        run: |
+          chmod +x scripts/validate-version.sh
+          ./scripts/validate-version.sh
+
       - name: Install dependencies
         run: npm ci
 
@@ -48,3 +53,24 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+
+      - name: Publish to Chrome Web Store
+        if: success()
+        uses: wdzeng/chrome-extension@v1
+        with:
+          extension-id: ${{ secrets.CWS_EXTENSION_ID }}
+          zip-path: pinstats-${{ github.ref_name }}.zip
+          service-account-json: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+
+      - name: Notify on CWS publish failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Chrome Web Store Publish Failed',
+              body: `Automated Chrome Web Store publishing failed for ${context.ref}.\n\nManual upload required: https://chrome.google.com/webstore/devconsole\n\nCheck workflow logs: ${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              labels: ['automation', 'release']
+            })

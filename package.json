@@ -1,7 +1,7 @@
 {
   "name": "pinstats",
   "version": "1.0.0",
-  "description": "Chrome Extension that reveals hidden Pinterest engagement metrics and enables one-click downloading",
+  "description": "Hidden Pinterest Metrics & Downloader - Chrome Extension that reveals engagement data and enables one-click downloads",
   "type": "module",
   "scripts": {
     "dev": "vite",

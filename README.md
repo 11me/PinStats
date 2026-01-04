@@ -1,4 +1,4 @@
-# PinStats - Pinterest Analytics & Media Downloader
+# PinStats: Hidden Pinterest Metrics & Downloader
 
 [![CI Status](https://github.com/11me/PinStats/workflows/CI/badge.svg)](https://github.com/11me/PinStats/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -47,10 +47,16 @@ PinStats brings this hidden data to the surface — right on the pins you're bro
 
 ## 📦 Install
 
-### From Chrome Web Store *(Coming Soon)*
-_Link will be added after publication_
+### Chrome Web Store (Recommended)
 
-### Manual Installation
+<!-- Update after Chrome Web Store publication with actual Extension ID -->
+<!-- [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/YOUR_EXTENSION_ID)](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID) -->
+
+**[Install PinStats from Chrome Web Store →](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID)**
+
+_Note: Replace `YOUR_EXTENSION_ID` with the actual Extension ID after first manual submission._
+
+### Manual Installation (For Development)
 1. Download the [latest release](https://github.com/11me/PinStats/releases/latest)
 2. Unzip the archive
 3. Open Chrome → `chrome://extensions/`
@@ -155,7 +161,7 @@ src/
 
 ## 🛣️ Roadmap
 
-- [ ] Chrome Web Store publication
+- [x] Chrome Web Store publication (CI setup complete, awaiting manual submission)
 - [ ] Firefox extension port
 - [ ] Export data to CSV/JSON
 - [ ] Advanced analytics dashboard

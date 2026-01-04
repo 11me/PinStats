@@ -30,6 +30,53 @@ npm run test:ci      # CI tests with coverage
 npm run tdd          # TDD mode
 ```
 
+## Release Process
+
+**For Maintainers:**
+
+### Publishing a New Version
+
+1. **Update version** in `manifest.json`:
+   ```json
+   "version": "1.2.0"
+   ```
+
+2. **Commit** the version bump:
+   ```bash
+   git commit -m "chore: bump version to 1.2.0"
+   ```
+
+3. **Create tag** (must match manifest version):
+   ```bash
+   git tag v1.2.0
+   ```
+
+4. **Push** commits and tags:
+   ```bash
+   git push && git push --tags
+   ```
+
+5. **CI automatically**:
+   - Validates tag matches manifest version
+   - Runs tests and builds extension
+   - Creates GitHub release with ZIP artifact
+   - Publishes to Chrome Web Store
+
+### Troubleshooting
+
+- **Version mismatch error**: Ensure git tag (e.g., `v1.2.0`) matches `manifest.json` version (`1.2.0`)
+- **CWS publish fails**: Check GitHub Actions logs for API errors
+- **Service Account not authorized**: Verify Service Account email is added to Chrome Web Store Developer Dashboard (Account → Service Accounts)
+- **Manual fallback**: If CWS automation fails, GitHub release ZIP is available for manual upload at [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole)
+
+### Prerequisites (One-Time Setup)
+
+Before automated CWS publishing works, you need:
+1. Extension ID from Chrome Web Store (requires initial manual submission)
+2. Google Cloud Service Account with JSON key
+3. Service Account added to Chrome Web Store Developer Dashboard
+4. GitHub Secrets configured: `CWS_SERVICE_ACCOUNT_JSON`, `CWS_EXTENSION_ID`
+
 ## Architecture
 
 3-layer pattern for CSP compliance:
