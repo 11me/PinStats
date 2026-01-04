@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "description": "Reveals hidden engagement metrics and enables one-click downloading from Pinterest",
   "permissions": ["scripting", "activeTab", "downloads", "storage"],
-  "host_permissions": ["*://pinterest.com/*", "*://www.pinterest.com/*"],
+  "host_permissions": ["*://*.pinterest.com/*", "*://*.pinterest.de/*", "*://*.pinterest.fr/*", "*://*.pinterest.co.uk/*", "*://*.pinterest.ca/*", "*://*.pinterest.com.au/*", "*://*.pinterest.jp/*", "*://*.pinterest.es/*", "*://*.pinterest.it/*", "*://*.pinterest.nl/*", "*://*.pinterest.pt/*", "*://*.pinterest.ru/*", "*://*.pinterest.se/*", "*://*.pinterest.ch/*", "*://*.pinterest.at/*", "*://*.pinterest.com.mx/*", "*://*.pinterest.cl/*", "*://*.pinterest.co.kr/*"],
   "content_scripts": [
     {
-      "matches": ["*://pinterest.com/*", "*://www.pinterest.com/*"],
+      "matches": ["*://*.pinterest.com/*", "*://*.pinterest.de/*", "*://*.pinterest.fr/*", "*://*.pinterest.co.uk/*", "*://*.pinterest.ca/*", "*://*.pinterest.com.au/*", "*://*.pinterest.jp/*", "*://*.pinterest.es/*", "*://*.pinterest.it/*", "*://*.pinterest.nl/*", "*://*.pinterest.pt/*", "*://*.pinterest.ru/*", "*://*.pinterest.se/*", "*://*.pinterest.ch/*", "*://*.pinterest.at/*", "*://*.pinterest.com.mx/*", "*://*.pinterest.cl/*", "*://*.pinterest.co.kr/*"],
       "js": ["src/content.ts"],
       "run_at": "document_start"
     }
@@ -19,7 +19,7 @@
   "web_accessible_resources": [
     {
       "resources": ["injector.js"],
-      "matches": ["*://pinterest.com/*", "*://www.pinterest.com/*"]
+      "matches": ["*://*.pinterest.com/*", "*://*.pinterest.de/*", "*://*.pinterest.fr/*", "*://*.pinterest.co.uk/*", "*://*.pinterest.ca/*", "*://*.pinterest.com.au/*", "*://*.pinterest.jp/*", "*://*.pinterest.es/*", "*://*.pinterest.it/*", "*://*.pinterest.nl/*", "*://*.pinterest.pt/*", "*://*.pinterest.ru/*", "*://*.pinterest.se/*", "*://*.pinterest.ch/*", "*://*.pinterest.at/*", "*://*.pinterest.com.mx/*", "*://*.pinterest.cl/*", "*://*.pinterest.co.kr/*"]
     }
   ],
   "icons": {
