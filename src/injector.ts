@@ -218,7 +218,9 @@ function sendToContentScript(pinID: string, pinData: PinData): void {
     type: 'pin-stats',
     data: { pinID, pinData },
   }
-  window.postMessage(message, window.origin)
+  console.log(`[PinStats] Injector sending pin-stats for ${pinID}`)
+  // Use '/' for same-window postMessage (MAIN → ISOLATED contexts)
+  window.postMessage(message, '/')
 }
 
 /**
@@ -486,8 +488,10 @@ function signalReady(): void {
     source: SOURCE_ID as 'pinstats-injector',
     type: 'injector-ready',
   }
-  window.postMessage(message, window.origin)
-  console.log('[PinStats] Injector signaled ready')
+  console.log('[PinStats] Injector signaling ready')
+  // Use '/' for same-window postMessage (MAIN → ISOLATED contexts)
+  window.postMessage(message, '/')
+  console.log('[PinStats] Injector signaled ready (postMessage sent)')
 }
 
 // Apply patches

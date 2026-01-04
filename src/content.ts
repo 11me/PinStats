@@ -184,7 +184,8 @@ function requestStatsFetch(pinID: string): void {
     }
 
     console.log(`[PinStats] Requesting stats for ${batch.length} pins:`, batch)
-    window.postMessage(message, window.origin)
+    // Use '/' for same-window postMessage (ISOLATED → MAIN contexts)
+    window.postMessage(message, '/')
 
     // Continue processing queue if more items
     if (fetchQueue.length > 0) {
