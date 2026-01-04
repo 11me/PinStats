@@ -130,6 +130,8 @@ describe('retryWithBackoff', () => {
     const fn = vi.fn().mockRejectedValue(new TypeError('Network failure'))
 
     const promise = retryWithBackoff(fn)
+    // Catch unhandled rejections to prevent test errors
+    promise.catch(() => {})
 
     // Advance through all backoffs: 1s, 2s, 4s
     await vi.advanceTimersByTimeAsync(1000)
@@ -165,6 +167,8 @@ describe('retryWithBackoff', () => {
     const fn = vi.fn().mockRejectedValue(new TypeError('Network failure'))
 
     const promise = retryWithBackoff(fn, { maxRetries: 5 })
+    // Catch unhandled rejections to prevent test errors
+    promise.catch(() => {})
 
     // Advance through all 5 attempts
     for (let i = 0; i < 5; i++) {
