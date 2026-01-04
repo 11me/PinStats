@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Create ZIP archive
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          cd dist
+          zip -r "../pinstats-${TAG_NAME}.zip" .
+          cd ..
+
+      - name: Create Release
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        uses: softprops/action-gh-release@v1
+        with:
+          files: pinstats-${{ env.TAG_NAME }}.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false

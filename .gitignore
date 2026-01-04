@@ -32,3 +32,9 @@ prd.md
 
 # Stray files
 index.js
+
+# Development tools
+.beads/
+.serena/
+@AGENTS.md
+AGENTS.md
