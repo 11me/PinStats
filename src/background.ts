@@ -6,6 +6,29 @@
 import type { DownloadRequest, DownloadResponse } from './types/messages'
 
 /**
+ * Validate that URL is from Pinterest CDN
+ * Prevents downloading from malicious sources
+ */
+function isValidPinterestUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url)
+    const hostname = urlObj.hostname.toLowerCase()
+
+    // Allow Pinterest CDN domains only
+    const allowedDomains = [
+      'i.pinimg.com',      // Images
+      'v.pinimg.com',      // Videos
+      's-media-cache-ak0.pinimg.com',  // Legacy image cache
+    ]
+
+    return allowedDomains.includes(hostname)
+  } catch {
+    // Invalid URL format
+    return false
+  }
+}
+
+/**
  * Extract file extension from URL
  */
 function getFileExtension(url: string): string {
@@ -28,6 +51,17 @@ function handleDownloadRequest(
   sendResponse: (response: DownloadResponse) => void
 ): void {
   const { pinID, imageUrl } = request
+
+  // Validate URL is from Pinterest CDN
+  if (!isValidPinterestUrl(imageUrl)) {
+    console.error(`[PinStats] Rejected download from untrusted source: ${imageUrl}`)
+    sendResponse({
+      success: false,
+      error: 'Invalid URL: Only Pinterest CDN URLs are allowed',
+    })
+    return
+  }
+
   const ext = getFileExtension(imageUrl)
   const filename = `pin-${pinID}.${ext}`
 
