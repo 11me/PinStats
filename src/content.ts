@@ -31,6 +31,12 @@ const MAX_BATCH_SIZE = 5
 let injectorReady = false
 const pendingFetchRequests: string[] = []
 
+// Cleanup references
+let scanIntervalId: number | null = null
+let refreshIntervalId: number | null = null
+let syncIntervalId: number | null = null
+let mutationObserver: MutationObserver | null = null
+
 /**
  * Inject the injector script into MAIN world
  */
@@ -100,6 +106,7 @@ function setupMessageListener(): void {
     }
 
     if (event.source !== window) return
+    if (event.origin !== window.origin) return
 
     const message = event.data as InjectorMessage
     if (message?.source !== SOURCE_ID) return
@@ -177,7 +184,7 @@ function requestStatsFetch(pinID: string): void {
     }
 
     console.log(`[PinStats] Requesting stats for ${batch.length} pins:`, batch)
-    window.postMessage(message, '*')
+    window.postMessage(message, window.origin)
 
     // Continue processing queue if more items
     if (fetchQueue.length > 0) {
@@ -438,7 +445,7 @@ function scanForPins(): void {
  * Set up MutationObserver
  */
 function setupObserver(): void {
-  const observer = new MutationObserver((mutations) => {
+  mutationObserver = new MutationObserver((mutations) => {
     let hasNewNodes = false
 
     mutations.forEach((mutation) => {
@@ -454,7 +461,7 @@ function setupObserver(): void {
     }
   })
 
-  observer.observe(document.body, {
+  mutationObserver.observe(document.body, {
     childList: true,
     subtree: true,
   })
@@ -476,6 +483,45 @@ function refreshOverlays(): void {
 }
 
 /**
+ * Cleanup resources on page unload
+ * Prevents memory leaks and ensures data is saved
+ */
+function setupCleanup(): void {
+  window.addEventListener('beforeunload', () => {
+    console.log('[PinStats] Cleaning up...')
+
+    // Stop mutation observer
+    if (mutationObserver) {
+      mutationObserver.disconnect()
+      mutationObserver = null
+    }
+
+    // Clear intervals
+    if (scanIntervalId !== null) {
+      window.clearInterval(scanIntervalId)
+      scanIntervalId = null
+    }
+    if (refreshIntervalId !== null) {
+      window.clearInterval(refreshIntervalId)
+      refreshIntervalId = null
+    }
+    if (syncIntervalId !== null) {
+      window.clearInterval(syncIntervalId)
+      syncIntervalId = null
+    }
+
+    // Clear fetch timer
+    if (fetchTimer) {
+      clearTimeout(fetchTimer)
+      fetchTimer = null
+    }
+
+    // Final sync to storage
+    cache.syncNow()
+  })
+}
+
+/**
  * Initialize
  */
 async function init(): Promise<void> {
@@ -485,17 +531,13 @@ async function init(): Promise<void> {
   // This ensures we don't miss any messages from the injector
   setupMessageListener()
 
-  // 2. Clear old bad cache data
-  await cache.clearAll()
-  console.log('[PinStats] Cleared old cache data')
-
-  // 3. Initialize cache from storage (will be empty now)
+  // 2. Initialize cache from storage
   await cache.initFromStorage()
 
-  // 4. Start storage sync
-  cache.startStorageSync()
+  // 3. Start storage sync
+  syncIntervalId = cache.startStorageSync()
 
-  // 5. NOW inject the interceptor (messages will be caught)
+  // 4. Inject the interceptor (messages will be caught)
   injectScript()
 
   // 5. Wait for DOM ready, then start
@@ -512,10 +554,13 @@ async function init(): Promise<void> {
   }
 
   // 6. Periodic scan (Pinterest uses infinite scroll)
-  setInterval(scanForPins, 3000)
+  scanIntervalId = window.setInterval(scanForPins, 3000)
 
   // 7. Periodic refresh of overlay values
-  setInterval(refreshOverlays, 2000)
+  refreshIntervalId = window.setInterval(refreshOverlays, 2000)
+
+  // 8. Set up cleanup on page unload
+  setupCleanup()
 
   console.log('[PinStats] Content script initialized')
 }

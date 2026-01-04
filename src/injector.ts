@@ -12,7 +12,10 @@ const CONTENT_SOURCE_ID = 'pinstats-content'
 const API_PATTERNS = ['/resource/', 'graphql', '/v3/', 'PinResource', 'UserHomefeed']
 
 // Track pins we've already tried to fetch (avoid duplicate requests)
-const fetchedPins = new Set<string>()
+// Uses Map to track timestamps for cleanup
+const fetchedPins = new Map<string, number>()
+const MAX_FETCHED_PINS = 5000
+const FETCHED_PIN_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
 // Parallel fetch settings
 const CONCURRENT_LIMIT = 20
@@ -23,6 +26,36 @@ const RATE_LIMIT_BACKOFF_MS = 1000
 const originalFetch = window.fetch
 const originalXHROpen = XMLHttpRequest.prototype.open
 const originalXHRSend = XMLHttpRequest.prototype.send
+
+/**
+ * Clean up old entries from fetchedPins to prevent memory leak
+ */
+function cleanupFetchedPins(): void {
+  const now = Date.now()
+  let removed = 0
+
+  for (const [pinID, timestamp] of fetchedPins.entries()) {
+    if (now - timestamp > FETCHED_PIN_TTL_MS) {
+      fetchedPins.delete(pinID)
+      removed++
+    }
+  }
+
+  // Also enforce max size (remove oldest if over limit)
+  if (fetchedPins.size > MAX_FETCHED_PINS) {
+    const entries = Array.from(fetchedPins.entries())
+    entries.sort((a, b) => a[1] - b[1]) // Sort by timestamp (oldest first)
+    const toRemove = fetchedPins.size - MAX_FETCHED_PINS
+    for (let i = 0; i < toRemove; i++) {
+      fetchedPins.delete(entries[i][0])
+      removed++
+    }
+  }
+
+  if (removed > 0) {
+    console.log(`[PinStats] Cleaned up ${removed} old fetchedPins entries`)
+  }
+}
 
 /**
  * Calculate age string from ISO date
@@ -184,7 +217,7 @@ function sendToContentScript(pinID: string, pinData: PinData): void {
     type: 'pin-stats',
     data: { pinID, pinData },
   }
-  window.postMessage(message, '*')
+  window.postMessage(message, window.origin)
 }
 
 /**
@@ -311,7 +344,7 @@ function patchXHR(): void {
  */
 async function fetchPinStats(pinID: string): Promise<boolean> {
   if (fetchedPins.has(pinID)) return false
-  fetchedPins.add(pinID)
+  fetchedPins.set(pinID, Date.now())
 
   try {
     const baseUrl = `${document.location.protocol}//${document.location.hostname}/resource/PinResource/get/`
@@ -425,6 +458,7 @@ function setupMessageListener(): void {
 
   window.addEventListener('message', (event) => {
     if (event.source !== window) return
+    if (event.origin !== window.origin) return
 
     const message = event.data as FetchStatsRequest
     if (message?.source !== CONTENT_SOURCE_ID) return
@@ -449,7 +483,7 @@ function signalReady(): void {
     source: SOURCE_ID as 'pinstats-injector',
     type: 'injector-ready',
   }
-  window.postMessage(message, '*')
+  window.postMessage(message, window.origin)
   console.log('[PinStats] Injector signaled ready')
 }
 
@@ -458,6 +492,9 @@ window.fetch = patchedFetch
 patchXHR()
 setupMessageListener()
 signalReady() // Signal that we're ready to receive messages
+
+// Periodic cleanup of fetchedPins to prevent memory leaks
+setInterval(cleanupFetchedPins, 60000) // Every minute
 
 console.log(
   '%c[PinStats] Interceptors initialized (fetch + XHR + direct fetch)',
