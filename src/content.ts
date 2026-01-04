@@ -11,9 +11,7 @@ import './styles.css'
 import type { PostMessagePayload, DownloadRequest, DownloadResponse, FetchStatsRequest, InjectorMessage } from './types/messages'
 import type { PinData } from './types/pinterest'
 import * as cache from './utils/statsCache'
-
-const SOURCE_ID = 'pinstats-injector'
-const CONTENT_SOURCE_ID = 'pinstats-content'
+import { SOURCE_ID, CONTENT_SOURCE_ID } from './constants'
 
 // Track processed containers to avoid duplicates
 const processedContainers = new WeakSet<Element>()
