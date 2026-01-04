@@ -49,12 +49,9 @@ PinStats brings this hidden data to the surface — right on the pins you're bro
 
 ### Chrome Web Store (Recommended)
 
-<!-- Update after Chrome Web Store publication with actual Extension ID -->
-<!-- [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/YOUR_EXTENSION_ID)](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID) -->
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/malhpeclnalgpjglhbgpnabkmglhijbb)](https://chromewebstore.google.com/detail/malhpeclnalgpjglhbgpnabkmglhijbb)
 
-**[Install PinStats from Chrome Web Store →](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID)**
-
-_Note: Replace `YOUR_EXTENSION_ID` with the actual Extension ID after first manual submission._
+**[Install PinStats from Chrome Web Store →](https://chromewebstore.google.com/detail/malhpeclnalgpjglhbgpnabkmglhijbb)**
 
 ### Manual Installation (For Development)
 1. Download the [latest release](https://github.com/11me/PinStats/releases/latest)
