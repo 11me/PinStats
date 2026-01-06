@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PinStats: Hidden Pinterest Metrics & Downloader",
-  "version": "1.0.1",
-  "description": "Reveals hidden engagement metrics and enables one-click downloading from Pinterest",
+  "name": "PinStats: Reveal Hidden Saves & Repins",
+  "version": "1.0.2",
+  "description": "Reveal hidden Pinterest stats: save counts, repins, comments & reactions on every pin. Essential analytics for creators.",
   "permissions": ["scripting", "activeTab", "downloads", "storage"],
   "host_permissions": ["*://*.pinterest.com/*", "*://*.pinterest.de/*", "*://*.pinterest.fr/*", "*://*.pinterest.co.uk/*", "*://*.pinterest.ca/*", "*://*.pinterest.com.au/*", "*://*.pinterest.jp/*", "*://*.pinterest.es/*", "*://*.pinterest.it/*", "*://*.pinterest.nl/*", "*://*.pinterest.pt/*", "*://*.pinterest.ru/*", "*://*.pinterest.se/*", "*://*.pinterest.ch/*", "*://*.pinterest.at/*", "*://*.pinterest.com.mx/*", "*://*.pinterest.cl/*", "*://*.pinterest.co.kr/*"],
   "action": {
